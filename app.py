@@ -471,34 +471,34 @@ def cart_checkout():
 
 @app.route("/orders/<int:order_id>/remove_item/<int:item_id>", methods=["POST"])
 @login_required
-def order_remove_item(order_id, item_id):
+def remove_item(order_id, item_id):
     order = Order.query.get_or_404(order_id)
+    item = OrderItem.query.get_or_404(item_id)
+
     if order.user_id != current_user.id and not current_user.is_admin:
         abort(403)
 
-    item = OrderItem.query.get_or_404(item_id)
-    if item.order_id != order.id:
-        abort(404)
-
-    # вернуть книгу в каталог
+    # Вернуть книгу в каталог
     if item.book:
         item.book.is_available = True
 
-    # скорректировать сумму
-    if order.total is None:
-        order.total = Decimal("0.00")
-    order.total -= (item.price_at_time or Decimal("0.00")) * item.quantity
-
-    # удалить позицию из заказа
+    # Удаление позиции из заказа
     db.session.delete(item)
 
-    # если книг больше нет — считаем заказ отменённым
+    # 🔹 Пересчёт total после удаления книги
+    order.total = sum(
+        (i.price_at_time or 0) * (i.quantity or 1)
+        for i in order.items
+    )
+
+    # Если книг в заказе не осталось — отменяем заказ
     if not order.items:
         order.status = "cancelled"
 
     db.session.commit()
+
     flash("Книга удалена из заказа", "info")
-    return redirect(url_for("order_edit", order_id=order.id))
+    return redirect(url_for("orders"))
 
 
 
