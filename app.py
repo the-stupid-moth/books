@@ -149,7 +149,20 @@ def index(): return redirect(url_for("books"))
 # ----------  каталог + фильтр  ----------
 @app.route("/books")
 def books():
-    query = Book.query
+    # Базовый запрос: берём только те книги, которые
+    # НЕ находятся в активных заказах (статус != 'cancelled')
+    query = (
+        Book.query
+        .outerjoin(OrderItem, OrderItem.book_id == Book.id)
+        .outerjoin(Order, OrderItem.order_id == Order.id)
+        .filter(
+            db.or_(
+                Order.id == None,          # книги без заказов
+                Order.status == "cancelled"  # или в отменённых заказах
+            )
+        )
+    )
+
     search = request.args.get("q", "").strip()
     genre_id = request.args.get("genre_id", type=int)
     author = request.args.get("author", "").strip()
@@ -185,6 +198,7 @@ def books():
         categories=categories,
         selected_genre_id=genre_id
     )
+
 
 
 # ----------  регистрация / вход / выход  ----------
@@ -353,12 +367,29 @@ def _book_form(book: Book | None = None):
 @app.route("/add_to_cart/<int:book_id>", methods=["POST"])
 @login_required
 def add_to_cart(book_id):
+    # Проверяем, не находится ли книга уже в активном заказе
+    busy = (
+        OrderItem.query
+        .join(Order)
+        .filter(
+            OrderItem.book_id == book_id,
+            Order.status != "cancelled"
+        )
+        .first()
+    )
+
+    if busy:
+        flash("Эта книга уже куплена другим пользователем.", "warning")
+        return redirect(request.referrer or url_for("books"))
+
     session.setdefault("cart", [])
     if book_id not in session["cart"]:
         session["cart"].append(book_id)
         session.modified = True
+
     flash("Книга добавлена в корзину", "success")
     return redirect(request.referrer or url_for("books"))
+
 
 @app.route("/cart")
 @login_required
@@ -482,9 +513,11 @@ def admin_set_user_status(user_id):
 def order_edit(order_id):
     order = Order.query.get_or_404(order_id)
 
+    # Проверка прав
     if order.user_id != current_user.id and not current_user.is_admin:
         abort(403)
 
+    # Нельзя редактировать завершённые и отменённые заказы
     if order.status in ("completed", "cancelled"):
         flash("Этот заказ нельзя редактировать", "warning")
         return redirect(url_for("orders") if not current_user.is_admin
@@ -492,6 +525,8 @@ def order_edit(order_id):
 
     if request.method == "POST":
         f = request.form
+
+        # ---------- обновление данных заказа ----------
         full_name = f.get("full_name", "").strip()
         phone = f.get("phone", "").strip()
         address = f.get("address", "").strip()
@@ -508,12 +543,29 @@ def order_edit(order_id):
         order.email = email or None
         order.comment = comment or None
 
+        # ---------- обработка редактирования списка книг ----------
+        keep_ids = [int(bid) for bid in f.getlist("books")]
+
+        # Удаляем те OrderItem, книг которых нет в "оставленных"
+        for item in list(order.items):
+            if item.book_id not in keep_ids:
+                db.session.delete(item)
+
+        # ---------- пересчёт итоговой суммы ----------
+        total = Decimal("0.00")
+        for item in order.items:
+            total += item.price_at_time * item.quantity
+
+        order.total = total
+
         db.session.commit()
-        flash("Данные заказа обновлены", "success")
+        flash("Заказ обновлён", "success")
+
         return redirect(url_for("orders") if not current_user.is_admin
                         else url_for("admin_dashboard"))
 
     return render_template("order_edit.html", order=order)
+
 
 @app.route("/orders/<int:order_id>/cancel", methods=["POST"])
 @login_required

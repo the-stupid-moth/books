@@ -10,6 +10,8 @@
 
     <form method="post">
       <div class="form-block">
+
+        <!-- Личные данные -->
         <label>ФИО получателя
           <input type="text" name="full_name"
                  value="{{ order.full_name or '' }}" required>
@@ -33,10 +35,32 @@
           <textarea name="comment">{{ order.comment or '' }}</textarea>
         </label>
 
-        <button type="submit" style="margin-top:10px;">Сохранить изменения</button>
+        <hr>
+
+        <!-- Блок книг заказа -->
+        <h3>Книги в заказе</h3>
+        <p>Снимите галочку, чтобы убрать книгу из заказа.</p>
+
+        {% for item in order.items %}
+          <div style="margin-bottom:8px;">
+            <label>
+              <input type="checkbox"
+                     name="books"
+                     value="{{ item.book_id }}"
+                     checked>
+              {{ item.book.title }} — {{ item.price_at_time }} ₽
+            </label>
+          </div>
+        {% endfor %}
+
+        <hr>
+
+        <button type="submit" class="btn btn-primary">Сохранить изменения</button>
         <a href="{{ url_for('orders') }}" style="margin-left:10px;">Отмена</a>
+
       </div>
     </form>
+
   </section>
 </div>
 {% endblock %}
