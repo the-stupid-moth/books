@@ -169,30 +169,10 @@ def index(): return redirect(url_for("books"))
 # ----------  каталог + фильтр  ----------
 @app.route("/books")
 def books():
-    # Базовый запрос: берём только те книги, которые
-    # НЕ находятся в активных заказах (статус != 'cancelled')
-    query = (
-        Book.query
-        .outerjoin(OrderItem, OrderItem.book_id == Book.id)
-        .outerjoin(Order, OrderItem.order_id == Order.id)
-        .filter(
-            db.or_(
-                Order.id == None,          # книги без заказов
-                Order.status == "cancelled"  # или в отменённых заказах
-            )
-        )
-    )
-
-    # пробуем несколько имён параметров из формы поиска
-    search = (
-        request.args.get("q")
-        or request.args.get("search")
-        or request.args.get("query")
-        or ""
-    ).strip()
-
+    query = Book.query
+    search = request.args.get("q", "").strip()
     genre_id = request.args.get("genre_id", type=int)
-    author   = request.args.get("author", "").strip()
+    author = request.args.get("author", "").strip()
     min_p  = request.args.get("min_price")
     max_p  = request.args.get("max_price")
 
@@ -225,6 +205,8 @@ def books():
         categories=categories,
         selected_genre_id=genre_id
     )
+
+
 
 
 # ----------  регистрация / вход / выход  ----------
