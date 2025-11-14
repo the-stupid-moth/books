@@ -166,6 +166,7 @@ def recalc_order_total(order: Order) -> None:
 @app.route("/")
 def index(): return redirect(url_for("books"))
 
+
 # ----------  каталог + фильтр  ----------
 @app.route("/books")
 def books():
@@ -205,8 +206,6 @@ def books():
         categories=categories,
         selected_genre_id=genre_id
     )
-
-
 
 
 # ----------  регистрация / вход / выход  ----------
