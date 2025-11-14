@@ -2,63 +2,75 @@
 {% block title %}Мои заказы{% endblock %}
 
 {% block content %}
-<h1>Мои заказы</h1>
+<div class="main-layout">
+  <section class="content">
+    <h2>Мои заказы</h2>
 
-{% if orders %}
-  <table class="table">
-    <thead>
-      <tr>
-        <th>Номер заказа</th>
-        <th>Список книг</th>
-        <th>Кол-во книг</th>
-        <th>Сумма заказа</th>
-        <th>Статус заказа</th>
-        <th>Действия над заказом</th>
-        <th>Дата заказа</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for o in orders %}
-        <tr>
-          <td>{{ o.id }}</td>
+    {% if orders %}
+      <table class="table table-bordered table-striped">
+        <thead>
+          <tr>
+            <th>Номер заказа</th>
+            <th>Список книг</th>
+            <th>Кол-во книг</th>
+            <th>Статус заказа</th>
+            <th>Итого, ₽</th>
+            <th>Действия над заказом</th>
+            <th>Дата заказа</th>
+          </tr>
+        </thead>
+        <tbody>
+        {# ВАЖНО: всё, где используется "order", находится внутри этого цикла #}
+        {% for order in orders %}
+          <tr>
+            <td>{{ order.id }}</td>
 
-          <td>
-            <ul>
-              {% for item in o.items %}
-                <li>{{ item.book.title }}</li>
-              {% endfor %}
-            </ul>
-          </td>
+            <td>
+              <ul>
+                {% for item in order.items %}
+                  <li>{{ item.book.title }}</li>
+                {% endfor %}
+              </ul>
+            </td>
 
-          <td>{{ o.items|length }}</td>
-          <td>{{ '%.2f' % order.total }} ₽</td>
-          <td>{{ o.status }}</td>
+            <td>{{ order.items|length }}</td>
 
-          <td>
-            {# Кнопка "Редактировать" — только если заказ ещё не завершён и не отменён #}
-            {% if o.status not in ['completed', 'cancelled'] %}
-              <a href="{{ url_for('order_edit', order_id=o.id) }}">Редактировать</a>
-            {% endif %}
+            <td>{{ order.status }}</td>
 
-            <form action="{{ url_for('order_cancel', order_id=o.id) }}"
-                  method="post" style="display:inline;">
-              <button type="submit">Отменить</button>
-            </form>
+            <td>
+              {{ '%.2f' % ((order.total or 0) | float) }} ₽
+            </td>
 
-            <form action="{{ url_for('order_delete', order_id=o.id) }}"
-                  method="post" style="display:inline;">
-              <button type="submit" onclick="return confirm('Удалить заказ?')">
-                Удалить
-              </button>
-            </form>
-          </td>
+            <td>
+              {# Кнопка редактирования, если заказ ещё можно менять #}
+              {% if order.status not in ['completed', 'cancelled'] %}
+                <a class="btn btn-sm btn-secondary"
+                   href="{{ url_for('order_edit', order_id=order.id) }}">
+                  Редактировать
+                </a>
+              {% endif %}
 
-          <td>{{ o.creation_date.strftime('%d.%m.%Y') }}</td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-{% else %}
-  <p>У вас пока нет заказов.</p>
-{% endif %}
+              <form method="post"
+                    action="{{ url_for('order_cancel', order_id=order.id) }}"
+                    style="display:inline;">
+                <button type="submit" class="btn btn-sm btn-warning">Отменить</button>
+              </form>
+
+              <form method="post"
+                    action="{{ url_for('order_delete', order_id=order.id) }}"
+                    style="display:inline;">
+                <button type="submit" class="btn btn-sm btn-danger">Удалить</button>
+              </form>
+            </td>
+
+            <td>{{ order.creation_date.strftime('%d.%m.%Y') }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>У вас пока нет заказов.</p>
+    {% endif %}
+  </section>
+</div>
 {% endblock %}
