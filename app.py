@@ -169,19 +169,8 @@ def index(): return redirect(url_for("books"))
 # ----------  каталог + фильтр  ----------
 @app.route("/books")
 def books():
-    # Базовый запрос: берём только те книги, которые
-    # НЕ находятся в активных заказах (статус != 'cancelled')
-    query = (
-        Book.query
-        .outerjoin(OrderItem, OrderItem.book_id == Book.id)
-        .outerjoin(Order, OrderItem.order_id == Order.id)
-        .filter(
-            db.or_(
-                Order.id == None,             # книги без заказов
-                Order.status == "cancelled"   # или только в отменённых заказах
-            )
-        )
-    )
+    # Показываем только доступные книги
+    query = Book.query.filter_by(is_available=True)
 
     search   = (request.args.get("q") or "").strip()
     genre_id = request.args.get("genre_id", type=int)
@@ -213,16 +202,14 @@ def books():
             min_dec = Decimal(min_p.replace(",", "."))
             query = query.filter(Book.price >= min_dec)
         except Exception:
-            # если ввели ерунду — фильтр "от" просто игнорируем
-            pass
+            pass  # если ввели фигню, просто игнорируем фильтр "от"
 
     if max_p:
         try:
             max_dec = Decimal(max_p.replace(",", "."))
             query = query.filter(Book.price <= max_dec)
         except Exception:
-            # если ввели ерунду — фильтр "до" игнорируем
-            pass
+            pass  # игнорируем некорректный "до"
 
     books_ = query.order_by(Book.created_at.desc()).all()
     categories = Category.query.order_by(Category.name.asc()).all()
@@ -233,7 +220,6 @@ def books():
         categories=categories,
         selected_genre_id=genre_id
     )
-
 
 # ----------  регистрация / вход / выход  ----------
 @app.route("/register", methods=["GET", "POST"])
@@ -401,18 +387,10 @@ def _book_form(book: Book | None = None):
 @app.route("/add_to_cart/<int:book_id>", methods=["POST"])
 @login_required
 def add_to_cart(book_id):
-    # Проверяем, не находится ли книга уже в активном заказе
-    busy = (
-        OrderItem.query
-        .join(Order)
-        .filter(
-            OrderItem.book_id == book_id,
-            Order.status != "cancelled"
-        )
-        .first()
-    )
+    book = Book.query.get_or_404(book_id)
 
-    if busy:
+    # Если книга уже недоступна (кто-то купил) – не даём добавить
+    if not book.is_available:
         flash("Эта книга уже куплена другим пользователем.", "warning")
         return redirect(request.referrer or url_for("books"))
 
@@ -423,6 +401,7 @@ def add_to_cart(book_id):
 
     flash("Книга добавлена в корзину", "success")
     return redirect(request.referrer or url_for("books"))
+
 
 
 @app.route("/cart")
@@ -494,8 +473,12 @@ def cart_checkout():
         )
         total += b.price
 
+        # книга оформлена – скрываем из каталога
+        b.is_available = False
+
     order.total = total
     db.session.commit()
+
 
     session.pop("cart", None)
     flash("Заказ оформлен!", "success")
@@ -609,6 +592,11 @@ def order_cancel(order_id):
     if order.status in ("completed", "cancelled"):
         flash("Этот заказ нельзя отменить", "warning")
     else:
+        # вернуть все книги из заказа в каталог
+        for item in order.items:
+            if hasattr(item.book, "is_available"):
+                item.book.is_available = True
+
         order.status = "cancelled"
         db.session.commit()
         flash("Заказ отменён", "info")
