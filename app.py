@@ -487,36 +487,6 @@ def cart_checkout():
     flash("Заказ оформлен!", "success")
     return redirect(url_for("orders"))
 
-@app.route("/orders/<int:order_id>/remove_item/<int:item_id>", methods=["POST"])
-@login_required
-def remove_item(order_id, item_id):
-    order = Order.query.get_or_404(order_id)
-    item = OrderItem.query.get_or_404(item_id)
-
-    # проверка прав
-    if order.user_id != current_user.id and not current_user.is_admin:
-        abort(403)
-
-    # вернуть книгу в каталог
-    if item.book:
-        item.book.is_available = True
-
-    # удалить позицию
-    db.session.delete(item)
-    db.session.flush()  # сразу применяем изменения к БД
-
-    # 🔹 пересчёт суммы по оставшимся позициям
-    recalc_order_total(order)
-
-    # если позиций больше нет — помечаем заказ как отменённый
-    if not order.items:
-        order.status = "cancelled"
-
-    db.session.commit()
-
-    flash("Книга удалена из заказа", "info")
-    return redirect(url_for("orders"))
-
 # ----------  история заказов  ----------
 @app.route("/orders")
 @login_required
@@ -602,12 +572,9 @@ def order_edit(order_id):
             if item.book_id not in keep_ids:
                 db.session.delete(item)
 
-        # ---------- пересчёт итоговой суммы ----------
-        total = Decimal("0.00")
-        for item in order.items:
-            total += item.price_at_time * item.quantity
-
-        order.total = total
+        # Обновляем БД и пересчитываем сумму
+        db.session.flush()
+        recalc_order_total(order)       
 
         db.session.commit()
         flash("Заказ обновлён", "success")
@@ -666,6 +633,29 @@ def order_item_delete(order_id, item_id):
     db.session.commit()
 
     flash("Книга удалена из заказа", "info")
+    return redirect(
+        url_for("orders") if not current_user.is_admin
+        else url_for("admin_dashboard")
+    )
+@app.route("/orders/<int:order_id>/delete", methods=["POST"])
+@login_required
+def order_delete(order_id):
+    order = Order.query.get_or_404(order_id)
+
+    # проверка прав
+    if order.user_id != current_user.id and not current_user.is_admin:
+        abort(403)
+
+    # вернуть книги в каталог, если используешь is_available
+    for item in order.items:
+        if hasattr(item.book, "is_available"):
+            item.book.is_available = True
+
+    # удалить сам заказ
+    db.session.delete(order)
+    db.session.commit()
+
+    flash("Заказ удалён", "info")
     return redirect(
         url_for("orders") if not current_user.is_admin
         else url_for("admin_dashboard")
