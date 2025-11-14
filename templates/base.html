@@ -9,7 +9,7 @@
     <header class="top-header">
         <div class="logo">
             <a href="{{ url_for('books') }}">Каталог</a>
-        </div> пая   
+        </div>  
 
         <form class="search-bar" action="{{ url_for('books') }}" method="get">
             <input type="text" name="q" placeholder="Поиск по названию или автору" value="{{ request.args.get('q','') }}">
