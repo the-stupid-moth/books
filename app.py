@@ -166,26 +166,43 @@ def recalc_order_total(order: Order) -> None:
 @app.route("/")
 def index(): return redirect(url_for("books"))
 
-
 # ----------  каталог + фильтр  ----------
 @app.route("/books")
 def books():
-    query = Book.query
-    search = request.args.get("q", "").strip()
-    genre_id = request.args.get("genre_id", type=int)
-    author = request.args.get("author", "").strip()
-    min_p  = request.args.get("min_price")
-    max_p  = request.args.get("max_price")
+    # Базовый запрос: берём только те книги, которые
+    # НЕ находятся в активных заказах (статус != 'cancelled')
+    query = (
+        Book.query
+        .outerjoin(OrderItem, OrderItem.book_id == Book.id)
+        .outerjoin(Order, OrderItem.order_id == Order.id)
+        .filter(
+            db.or_(
+                Order.id == None,            # книги без заказов
+                Order.status == "cancelled"  # или в отменённых заказах
+            )
+        )
+    )
 
+    # --- ПОИСК ---
+    # берём значение именно из параметра q (из строки поиска в шапке)
+    search = request.args.get("q", "").strip()
+
+    genre_id = request.args.get("genre_id", type=int)
+    author   = request.args.get("author", "").strip()
+    min_p    = request.args.get("min_price")
+    max_p    = request.args.get("max_price")
+
+    # 🔍 поиск по названию или автору (без lower, чтобы не ломать кириллицу)
     if search:
-        like = f"%{search.lower()}%"
+        like = f"%{search}%"
         query = query.filter(
             db.or_(
-                db.func.lower(Book.title).like(like),
-                db.func.lower(Book.author).like(like)
+                Book.title.like(like),
+                Book.author.like(like),
             )
         )
 
+    # --- ФИЛЬТРЫ (НЕ ТРОГАЕМ) ---
     if genre_id:
         query = query.join(Category).filter(Category.id == genre_id)
 

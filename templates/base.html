@@ -11,10 +11,11 @@
             <a href="{{ url_for('books') }}">Каталог</a>
         </div>  
 
-        <form class="search-bar" action="{{ url_for('books') }}" method="get">
-            <input type="text" name="q" placeholder="Поиск по названию или автору" value="{{ request.args.get('q','') }}">
+        <form action="{{ url_for('books') }}" method="get">
+            <input type="text" name="q" placeholder="Поиск по названию или автору">
             <button type="submit">Поиск</button>
         </form>
+
 
         <div class="header-right">
             {% if current_user.is_authenticated %}
