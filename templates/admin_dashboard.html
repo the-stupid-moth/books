@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Административная панель{% endblock %}
+
+{% block content %}
+<h2>Админ-панель</h2>
+
+<h3>Пользователи</h3>
+<table>
+  <tr>
+    <th>ID</th>
+    <th>Логин</th>
+    <th>E-mail</th>
+    <th>Статус</th>
+    <th>Админ</th>
+  </tr>
+  {% for u in users %}
+  <tr>
+    <td>{{ u.id }}</td>
+    <td>{{ u.username }}</td>
+    <td>{{ u.email }}</td>
+    <td>
+      <form action="{{ url_for('admin_set_user_status', user_id=u.id) }}" method="post" style="display:inline;">
+        <select name="status">
+          {% for s in ["active", "banned", "pending"] %}
+            <option value="{{ s }}" {% if u.status == s %}selected{% endif %}>{{ s }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit">OK</button>
+      </form>
+    </td>
+    <td>{{ 'да' if u.is_admin else 'нет' }}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+<h3 style="margin-top:20px;">Книги</h3>
+<table>
+  <tr>
+    <th>ID</th>
+    <th>Название</th>
+    <th>Автор</th>
+    <th>Жанр</th>
+    <th>Цена</th>
+    <th>Владелец</th>
+    <th>Действия</th>
+  </tr>
+  {% for b in books %}
+  <tr>
+    <td>{{ b.id }}</td>
+    <td><a href="{{ url_for('book_detail', book_id=b.id) }}">{{ b.title }}</a></td>
+    <td>{{ b.author }}</td>
+    <td>{{ b.category.name if b.category else '' }}</td>
+    <td>{{ "%.2f"|format(b.price) }} ₽</td>
+    <td>{{ b.owner.username if b.owner else '-' }}</td>
+    <td>
+      <form action="{{ url_for('book_delete', book_id=b.id) }}" method="post" style="display:inline;">
+        <button onclick="return confirm('Удалить книгу?')">Удалить</button>
+      </form>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+
+<h3 style="margin-top:20px;">Заказы</h3>
+<div class="table-wrapper">
+  <table>
+    <tr>
+      <th>ID</th>
+      <th>Пользователь</th>
+      <th>Дата</th>
+      <th>Статус</th>
+      <th>Сумма</th>
+      <th>Действия</th>
+    </tr>
+    {% set status_labels = {
+      'new': 'новый',
+      'processing': 'в обработке',
+      'completed': 'подтверждён',
+      'cancelled': 'отменён'
+    } %}
+    {% for o in orders %}
+    <tr>
+      <td>{{ o.id }}</td>
+      <td>{{ o.user.username if o.user else '-' }}</td>
+      <td>{{ o.creation_date.strftime('%d.%m.%Y') if o.creation_date else '' }}</td>
+
+      <td>{{ status_labels.get(o.status, o.status) }}</td>
+
+      <td>{{ "%.2f"|format(o.total or 0) }} ₽</td>
+      <td>
+        <!-- Подтвердить (completed) -->
+        <form action="{{ url_for('admin_set_order_status', order_id=o.id) }}" method="post" style="display:inline;">
+          <input type="hidden" name="status" value="completed">
+          <button type="submit"
+                  class="btn btn-primary"
+                  {% if o.status in ['completed', 'cancelled'] %}disabled{% endif %}>
+            Подтвердить
+          </button>
+        </form>
+
+        <!-- Отменить -->
+        <form action="{{ url_for('order_cancel', order_id=o.id) }}" method="post" style="display:inline;">
+          <button type="submit"
+                  class="btn btn-secondary"
+                  {% if o.status in ['completed', 'cancelled'] %}disabled{% endif %}>
+            Отменить
+          </button>
+        </form>
+
+        <!-- Удалить -->
+        <form action="{{ url_for('order_delete', order_id=o.id) }}" method="post" style="display:inline;">
+          <button type="submit"
+                  class="btn btn-danger"
+                  onclick="return confirm('Удалить заказ?')">
+            Удалить
+          </button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+
+{% endblock %}

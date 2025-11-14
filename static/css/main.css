@@ -1,0 +1,340 @@
+/* базовое поведение размеров — чтобы ничего не вылезало */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    background: #f5f5f5;
+}
+
+/* верхняя панель */
+
+header.top-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 40px;
+    background: #ffffff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.logo {
+    font-weight: bold;
+}
+
+.search-bar {
+    flex: 1;
+    margin: 0 20px;
+    display: flex;
+}
+
+.search-bar input[type="text"] {
+    flex: 1;
+    padding: 6px 8px;
+    border: 1px solid #ccc;
+    border-right: none;
+    border-radius: 4px 0 0 4px;
+}
+
+.search-bar button {
+    padding: 6px 14px;
+    border: 1px solid #333;
+    background: #333;
+    color: #fff;
+    border-radius: 0 4px 4px 0;
+    cursor: pointer;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* общая раскладка */
+
+.main-layout {
+    display: flex;
+    padding: 20px 40px;
+    gap: 20px;
+}
+
+/* сайдбар слева на главной */
+
+.sidebar {
+    width: 230px;
+}
+
+.sidebar h4 {
+    margin: 0 0 8px;
+    font-size: 14px;
+}
+
+.sidebar-block {
+    background: #ffffff;
+    padding: 10px;
+    margin-bottom: 12px;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+}
+
+.sidebar-block label {
+    display: block;
+    font-size: 13px;
+    margin-bottom: 6px;
+}
+
+.sidebar-block input,
+.sidebar-block select {
+    width: 100%;
+    padding: 5px 6px;
+    margin-top: 4px;
+}
+
+/* контент справа */
+
+.content {
+    flex: 1;
+}
+
+.content h2 {
+    margin-top: 0;
+}
+
+/* карточки книг */
+
+.book-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.book-card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 10px;
+    background: #fff;
+    text-align: left;
+}
+
+.book-card img {
+    max-width: 100%;
+    height: 180px;
+    object-fit: cover;
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+
+/* формы / таблицы */
+
+form label {
+    display: block;
+    margin-top: 8px;
+}
+
+input,
+textarea,
+select,
+button {
+    padding: 6px 8px;
+    font: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+.table-wrapper {
+    background: #fff;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 10px;
+}
+
+th,
+td {
+    border: 1px solid #ddd;
+    padding: 8px;
+}
+
+th {
+    background-color: #f2f2f2;
+    text-align: left;
+}
+
+/* флеш-сообщения */
+
+.flash {
+    padding: 10px;
+    border-radius: 6px;
+    margin: 10px 40px 0;
+}
+
+.flash.success { background-color: #d4edda; }
+.flash.danger  { background-color: #f8d7da; }
+.flash.warning { background-color: #fff3cd; }
+.flash.info    { background-color: #d1ecf1; }
+
+/* ЛК-меню */
+
+.profile-menu {
+    position: relative;
+}
+
+.profile-menu-button {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background: #fff;
+}
+
+.profile-dropdown {
+    position: absolute;
+    right: 0;
+    top: 110%; /* сразу под кнопкой, без зазора */
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    padding: 8px 0;
+    min-width: 180px;
+    display: none;
+    z-index: 10;
+}
+
+.profile-dropdown a {
+    display: block;
+    padding: 6px 12px;
+}
+
+.profile-dropdown a:hover {
+    background: #f5f5f5;
+}
+
+/* меню видно только когда есть класс .open */
+.profile-dropdown.open {
+    display: block;
+}
+
+/* корзина — карточки */
+
+.cart-items {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.cart-card {
+    background: #fff;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    padding: 10px;
+}
+
+.cart-card img {
+    max-width: 100%;
+    height: 160px;
+    object-fit: cover;
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+
+.checkout-box {
+    margin-top: 30px;
+    padding: 15px;
+    background: #fff;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    max-width: 400px;
+}
+
+/* базовый стиль для кнопок и ссылок-кнопок */
+
+button,
+.btn {
+    display: inline-block;
+    padding: 6px 12px;
+    font: inherit;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    background: #f5f5f5;
+    color: #000;
+    cursor: pointer;
+    text-decoration: none;
+    line-height: 1.2;
+}
+
+button:hover,
+.btn:hover {
+    background: #e0e0e0;
+}
+
+/* модификаторы */
+
+.btn-primary {
+    background: #333;
+    border-color: #333;
+    color: #fff;
+}
+
+.btn-primary:hover {
+    background: #444;
+}
+
+.btn-secondary {
+    background: #ffffff;
+    border-color: #ccc;
+}
+
+.btn-danger {
+    background: #c62828;
+    border-color: #c62828;
+    color: #fff;
+}
+
+.btn-danger:hover {
+    background: #d32f2f;
+}
+
+/* небольшие отступы между действиями */
+.btn + .btn,
+.btn + button,
+button + .btn {
+    margin-left: 6px;
+}
+
+/* чтобы заголовки/кнопка "Добавить" не прилипали */
+.content h2 {
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+.content .toolbar {
+    margin-bottom: 10px;
+}

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Мои книги{% endblock %}
+{% block content %}
+<div class="main-layout">
+  <section class="content">
+    <h2>Мои книги</h2>
+
+    <div class="toolbar">
+      <a href="{{ url_for('book_create') }}" class="btn btn-primary">➕ Добавить книгу</a>
+    </div>
+
+    <div class="table-wrapper">
+      <table>
+        <tr>
+          <th>ID</th>
+          <th>Название</th>
+          <th>Год</th>
+          <th>Цена</th>
+          <th>Состояние</th>
+          <th>Действия</th>
+        </tr>
+        {% for b in books %}
+        <tr>
+          <td>{{ b.id }}</td>
+          <td><a href="{{ url_for('book_detail', book_id=b.id) }}">{{ b.title }}</a></td>
+          <td>{{ b.year or '—' }}</td>
+          <td>{{ "%.2f"|format(b.price) }} ₽</td>
+          <td>{{ b.status }}</td>
+          <td>
+            <a href="{{ url_for('book_edit', book_id=b.id) }}" class="btn btn-secondary">Редактировать</a>
+            <form action="{{ url_for('book_delete', book_id=b.id) }}" method="post" style="display:inline">
+              <button class="btn btn-danger" onclick="return confirm('Удалить?')">Удалить</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}

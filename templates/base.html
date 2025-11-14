@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}BukiniStore{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body>
+    <header class="top-header">
+        <div class="logo">
+            <a href="{{ url_for('books') }}">Логотип</a>
+        </div>
+
+        <form class="search-bar" action="{{ url_for('books') }}" method="get">
+            <input type="text" name="q" placeholder="Поиск по названию или автору" value="{{ request.args.get('q','') }}">
+            <button type="submit">Поиск</button>
+        </form>
+
+        <div class="header-right">
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('cart') }}">Корзина ({{ cart_count() }})</a>
+
+                <div class="profile-menu">
+                    <button type="button" class="profile-menu-button">ЛК</button>
+                    <div class="profile-dropdown">
+                        <a href="{{ url_for('my_books') }}">Выставленные книги</a>
+                        <a href="{{ url_for('orders') }}">История заказов</a>
+                        {% if current_user.is_admin %}
+                            <a href="{{ url_for('admin_dashboard') }}">Админ-панель</a>
+                        {% endif %}
+                        <a href="{{ url_for('logout') }}">Выйти ({{ current_user.username }})</a>
+                    </div>
+                </div>
+            {% else %}
+                <!-- гость видит корзину, но кликая — попадает на логин -->
+                <a href="{{ url_for('login', next=url_for('cart')) }}">Корзина (0)</a>
+                <a href="{{ url_for('login') }}">Вход</a>
+                <a href="{{ url_for('register') }}">Регистрация</a>
+            {% endif %}
+        </div>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=True) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+
+    <script>
+        document.addEventListener('click', function (e) {
+            const menu = document.querySelector('.profile-menu');
+            const dropdown = document.querySelector('.profile-dropdown');
+            if (!menu || !dropdown) return;
+
+            // клик по кнопке "ЛК" — переключаем меню
+            if (e.target.closest('.profile-menu-button')) {
+                dropdown.classList.toggle('open');
+                return;
+            }
+
+            // если кликнули вне меню — закрываем
+            if (!menu.contains(e.target)) {
+                dropdown.classList.remove('open');
+            }
+        });
+    </script>
+
+</body>
+</html>

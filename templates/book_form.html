@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Редактировать книгу' if book else 'Добавить книгу' }}{% endblock %}
+{% block content %}
+<div class="main-layout">
+  <section class="content">
+    <h2>{{ 'Редактировать книгу' if book else 'Добавить книгу' }}</h2>
+
+    <form method="post" enctype="multipart/form-data">
+      <label>Название книги*
+        <input name="title" value="{{ book.title if book else '' }}" required>
+      </label>
+
+      <label>Автор книги*
+        <input name="author" value="{{ book.author if book else '' }}" required>
+      </label>
+
+      <label>Год издания
+        <input name="year" type="number" value="{{ book.year if book and book.year else '' }}">
+      </label>
+
+      <label>Обложка
+        <input type="file" name="photo" accept="image/*">
+      </label>
+
+      <label>Цена*
+        <input name="price" type="number" step="0.01" value="{{ book.price if book else '' }}" required>
+      </label>
+
+      <label>Состояние
+        <select name="status">
+            {% set statuses = ["отличное", "хорошее", "среднее", "плохое"] %}
+            {% for s in statuses %}
+                <option value="{{ s }}"
+                    {% if book and book.status == s %}selected{% endif %}>
+                    {{ s }}
+                </option>
+            {% endfor %}
+        </select>
+      </label>
+
+      <label>Описание / аннотация
+        <textarea name="description">{{ book.description if book else '' }}</textarea>
+      </label>
+
+      <label>Жанр / категория
+        <select name="category_id">
+          <option value="">— не выбрано —</option>
+          {% for c in categories %}
+            <option value="{{ c.id }}"
+                    {% if book and book.category and book.category.id == c.id %}selected{% endif %}>
+              {{ c.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label>Или новая категория
+        <input name="new_category" placeholder="Например, Фантастика">
+      </label>
+
+      <button type="submit" style="margin-top:15px;">
+        {{ 'Сохранить изменения' if book else 'Добавить книгу' }}
+      </button>
+    </form>
+  </section>
+</div>
+{% endblock %}

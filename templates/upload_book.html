@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Добавить книгу{% endblock %}
+{% block content %}
+<h2>Добавить новую книгу</h2>
+
+<form action="{{ url_for('book_create') }}" method="POST" enctype="multipart/form-data">
+    <label>Название*:</label>
+    <input type="text" name="title" required>
+
+    <label>Автор*:</label>
+    <input type="text" name="author" required>
+
+    <label>Жанр:</label>
+    <input type="text" name="genre">
+
+    <label>Описание:</label>
+    <textarea name="description" rows="4"></textarea>
+
+    <label>Цена*:</label>
+    <input type="number" step="0.01" name="price" required>
+
+    <label>Состояние книги:</label>
+    <select name="status">
+        {% for s in ["отличное", "хорошее", "среднее", "плохое"] %}
+            <option value="{{ s }}" {% if book and book.status == s %}selected{% endif %}>{{ s.capitalize() }}</option>
+        {% endfor %}
+    </select>
+
+    <label>Обложка*:</label>
+    <input type="file" name="photo" accept="image/*" required>
+
+    <button type="submit">Добавить книгу</button>
+
+    
+</form>
+{% endblock %}

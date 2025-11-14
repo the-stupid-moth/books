@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Каталог{% endblock %}
+
+{% block content %}
+<div class="main-layout">
+  <aside class="sidebar">
+    <form method="get" action="{{ url_for('books') }}">
+
+      <div class="sidebar-block">
+        <h4>Фильтрация по цене</h4>
+        <label>от
+          <input type="number" step="0.01" name="min_price" value="{{ request.args.get('min_price','') }}">
+        </label>
+        <label>до
+          <input type="number" step="0.01" name="max_price" value="{{ request.args.get('max_price','') }}">
+        </label>
+      </div>
+
+      <div class="sidebar-block">
+        <h4>Фильтрация по жанру</h4>
+        <select name="genre_id">
+          <option value="">Все жанры</option>
+          {% for c in categories %}
+            <option value="{{ c.id }}"
+              {% if selected_genre_id == c.id %}selected{% endif %}>
+              {{ c.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="sidebar-block">
+        <h4>Фильтрация по автору</h4>
+        <input type="text" name="author" placeholder="автор" value="{{ request.args.get('author','') }}">
+      </div>
+
+      <button type="submit">Применить фильтры</button>
+    </form>
+  </aside>
+
+  <section class="content">
+    <h2>Каталог книг</h2>
+
+    <div class="book-grid">
+      {% for book in books %}
+        <div class="book-card">
+          {% if book.cover %}
+            <img src="{{ url_for('static', filename='uploads/' ~ book.cover) }}" alt="{{ book.title }}">
+          {% endif %}
+
+          <h3>
+            <a href="{{ url_for('book_detail', book_id=book.id) }}">{{ book.title }}</a>
+          </h3>
+
+          <p><strong>Автор:</strong> {{ book.author }}</p>
+          {% if book.year %}
+            <p><strong>Год выпуска:</strong> {{ book.year }}</p>
+          {% endif %}
+          {% if book.category %}
+            <p><strong>Жанр:</strong> {{ book.category.name }}</p>
+          {% endif %}
+          <p><strong>Состояние:</strong> {{ book.status }}</p>
+          <p><strong>Цена:</strong> {{ "%.2f"|format(book.price) }} ₽</p>
+
+          {% if current_user.is_authenticated %}
+            <form action="{{ url_for('add_to_cart', book_id=book.id) }}" method="post">
+                <button type="submit" class="btn btn-primary">В корзину</button>
+            </form>
+            {% else %}
+            <a href="{{ url_for('login', next=url_for('book_detail', book_id=book.id)) }}" class="btn btn-primary">
+                Войти, чтобы купить
+            </a>
+            {% endif %}
+
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

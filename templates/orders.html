@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Мои заказы{% endblock %}
+
+{% block content %}
+<div class="main-layout">
+  <section class="content">
+    <h2>Мои заказы</h2>
+
+    <div class="table-wrapper">
+      <table>
+        <tr>
+          <th>Номер заказа</th>
+          <th>Список книг</th>
+          <th>Кол-во книг</th>
+          <th>Статус заказа</th>
+          <th>Действия над заказом</th>
+          <th>Дата заказа</th>
+        </tr>
+        {% for o in orders %}
+        <tr>
+          <td>{{ o.id }}</td>
+          <td>
+            <ul style="margin:0;padding-left:18px;">
+              {% for it in o.items %}
+                <li>{{ it.book.title }}</li>
+              {% endfor %}
+            </ul>
+          </td>
+          <td>{{ o.items|length }}</td>
+          <td>{{ o.status }}</td>
+          <td>
+            <form action="{{ url_for('order_cancel', order_id=o.id) }}" method="post" style="display:inline;">
+              <button type="submit">Отменить</button>
+            </form>
+            <form action="{{ url_for('order_delete', order_id=o.id) }}" method="post" style="display:inline;">
+              <button type="submit" onclick="return confirm('Удалить заказ?')">Удалить</button>
+            </form>
+          </td>
+          <td>{{ o.creation_date.strftime('%d.%m.%Y') if o.creation_date else '' }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}
