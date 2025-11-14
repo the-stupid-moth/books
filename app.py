@@ -177,18 +177,19 @@ def books():
         .outerjoin(Order, OrderItem.order_id == Order.id)
         .filter(
             db.or_(
-                Order.id == None,          # книги без заказов
-                Order.status == "cancelled"  # или в отменённых заказах
+                Order.id == None,             # книги без заказов
+                Order.status == "cancelled"   # или только в отменённых заказах
             )
         )
     )
 
-    search = request.args.get("q", "").strip()
+    search   = (request.args.get("q") or "").strip()
     genre_id = request.args.get("genre_id", type=int)
-    author = request.args.get("author", "").strip()
-    min_p  = request.args.get("min_price")
-    max_p  = request.args.get("max_price")
+    author   = (request.args.get("author") or "").strip()
+    min_p    = (request.args.get("min_price") or "").strip()
+    max_p    = (request.args.get("max_price") or "").strip()
 
+    # Поиск по названию / автору
     if search:
         like = f"%{search.lower()}%"
         query = query.filter(
@@ -198,16 +199,30 @@ def books():
             )
         )
 
+    # Фильтр по жанру
     if genre_id:
         query = query.join(Category).filter(Category.id == genre_id)
 
+    # Фильтр по автору
     if author:
         query = query.filter(Book.author.ilike(f"%{author}%"))
 
+    # Фильтр по цене (ГРАНИЦЫ ВКЛЮЧИТЕЛЬНЫЕ)
     if min_p:
-        query = query.filter(Book.price >= Decimal(min_p))
+        try:
+            min_dec = Decimal(min_p.replace(",", "."))
+            query = query.filter(Book.price >= min_dec)
+        except Exception:
+            # если ввели ерунду — фильтр "от" просто игнорируем
+            pass
+
     if max_p:
-        query = query.filter(Book.price <= Decimal(max_p))
+        try:
+            max_dec = Decimal(max_p.replace(",", "."))
+            query = query.filter(Book.price <= max_dec)
+        except Exception:
+            # если ввели ерунду — фильтр "до" игнорируем
+            pass
 
     books_ = query.order_by(Book.created_at.desc()).all()
     categories = Category.query.order_by(Category.name.asc()).all()
@@ -218,7 +233,6 @@ def books():
         categories=categories,
         selected_genre_id=genre_id
     )
-
 
 
 # ----------  регистрация / вход / выход  ----------
