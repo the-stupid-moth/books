@@ -6,7 +6,7 @@ from flask import (
     Flask, render_template, redirect, url_for,
     request, flash, session, abort
 )
-from flask_sqlalchemy import SQLAlchemy
+from flask_sqlalchemy import (SQLAlchemy, func)
 from flask_login import (
     LoginManager, login_user, logout_user,
     login_required, current_user, UserMixin
@@ -143,6 +143,16 @@ def admin_required(view_func):
         return view_func(*args, **kwargs)
     return wrapped
 
+def recalc_order_total(order: Order) -> None:
+    """
+    Пересчитать поле order.total по текущим позициям заказа в БД.
+    """
+    total = db.session.query(
+        func.coalesce(func.sum(OrderItem.price_at_time * OrderItem.quantity), 0)
+    ).filter(OrderItem.order_id == order.id).scalar()
+
+    # scalar() вернёт Decimal или None
+    order.total = total or Decimal("0.00")
 
 # ────────────  маршруты  ────────────
 @app.route("/")
@@ -475,23 +485,22 @@ def remove_item(order_id, item_id):
     order = Order.query.get_or_404(order_id)
     item = OrderItem.query.get_or_404(item_id)
 
+    # проверка прав
     if order.user_id != current_user.id and not current_user.is_admin:
         abort(403)
 
-    # Вернуть книгу в каталог
+    # вернуть книгу в каталог
     if item.book:
         item.book.is_available = True
 
-    # Удаление позиции из заказа
+    # удалить позицию
     db.session.delete(item)
+    db.session.flush()  # сразу применяем изменения к БД
 
-    # 🔹 Пересчёт total после удаления книги
-    order.total = sum(
-        (i.price_at_time or 0) * (i.quantity or 1)
-        for i in order.items
-    )
+    # 🔹 пересчёт суммы по оставшимся позициям
+    recalc_order_total(order)
 
-    # Если книг в заказе не осталось — отменяем заказ
+    # если позиций больше нет — помечаем заказ как отменённый
     if not order.items:
         order.status = "cancelled"
 
@@ -499,9 +508,6 @@ def remove_item(order_id, item_id):
 
     flash("Книга удалена из заказа", "info")
     return redirect(url_for("orders"))
-
-
-
 
 # ----------  история заказов  ----------
 @app.route("/orders")
