@@ -6,7 +6,8 @@ from flask import (
     Flask, render_template, redirect, url_for,
     request, flash, session, abort
 )
-from flask_sqlalchemy import (SQLAlchemy, func)
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import func
 from flask_login import (
     LoginManager, login_user, logout_user,
     login_required, current_user, UserMixin
