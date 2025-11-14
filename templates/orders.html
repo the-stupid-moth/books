@@ -2,55 +2,61 @@
 {% block title %}Мои заказы{% endblock %}
 
 {% block content %}
-<div class="main-layout">
-  <section class="content">
-    <h2>Мои заказы</h2>
+<h1>Мои заказы</h1>
 
-    <div class="table-wrapper">
-      <table>
-        <tr>
-          <th>Номер заказа</th>
-          <th>Список книг</th>
-          <th>Кол-во книг</th>
-          <th>Статус заказа</th>
-          <th>Действия над заказом</th>
-          <th>Дата заказа</th>
-        </tr>
-        {% for o in orders %}
+{% if orders %}
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Номер заказа</th>
+        <th>Список книг</th>
+        <th>Кол-во книг</th>
+        <th>Статус заказа</th>
+        <th>Действия над заказом</th>
+        <th>Дата заказа</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for o in orders %}
         <tr>
           <td>{{ o.id }}</td>
+
           <td>
-            <ul style="margin:0;padding-left:18px;">
-              {% for it in o.items %}
-                <li>{{ it.book.title }}</li>
+            <ul>
+              {% for item in o.items %}
+                <li>{{ item.book.title }}</li>
               {% endfor %}
             </ul>
           </td>
+
           <td>{{ o.items|length }}</td>
           <td>{{ o.status }}</td>
-         <td>
-          {% if o.status not in ['completed', 'cancelled'] %}
-            <a href="{{ url_for('order_edit', order_id=o.id) }}">Редактировать</a>
-          {% endif %}
 
-          <form action="{{ url_for('order_cancel', order_id=o.id) }}"
-                method="post" style="display:inline;">
-            <button type="submit">Отменить</button>
-          </form>
+          <td>
+            {# Кнопка "Редактировать" — только если заказ ещё не завершён и не отменён #}
+            {% if o.status not in ['completed', 'cancelled'] %}
+              <a href="{{ url_for('order_edit', order_id=o.id) }}">Редактировать</a>
+            {% endif %}
 
-          <form action="{{ url_for('order_delete', order_id=o.id) }}"
-                method="post" style="display:inline;">
-            <button type="submit" onclick="return confirm('Удалить заказ?')">
-              Удалить
-            </button>
-          </form>
-        </td>
+            <form action="{{ url_for('order_cancel', order_id=o.id) }}"
+                  method="post" style="display:inline;">
+              <button type="submit">Отменить</button>
+            </form>
 
-          <td>{{ o.creation_date.strftime('%d.%m.%Y') if o.creation_date else '' }}</td>
+            <form action="{{ url_for('order_delete', order_id=o.id) }}"
+                  method="post" style="display:inline;">
+              <button type="submit" onclick="return confirm('Удалить заказ?')">
+                Удалить
+              </button>
+            </form>
+          </td>
+
+          <td>{{ o.creation_date.strftime('%d.%m.%Y') }}</td>
         </tr>
-        {% endfor %}
-      </table>
-    </div>
-  </section> 
-</div>
+      {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p>У вас пока нет заказов.</p>
+{% endif %}
 {% endblock %}
