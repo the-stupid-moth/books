@@ -17,7 +17,14 @@ from functools import wraps
 
 # ────────────  базовая конфигурация  ────────────
 load_dotenv()
-app = Flask(__name__)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+app = Flask(
+    __name__,
+    template_folder=os.path.join(BASE_DIR, "templates"),
+    static_folder=os.path.join(BASE_DIR, "static"),
+)
+
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(os.path.dirname(__file__), "buk.db")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["UPLOAD_FOLDER"] = "static/uploads"
@@ -47,8 +54,8 @@ class User(UserMixin, db.Model):
 
     def check_password(self, pw):
         return check_password_hash(self.password_hash, pw)
-    
-    
+
+
     @property
     def is_active(self) -> bool:
         """
