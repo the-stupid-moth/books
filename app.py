@@ -87,6 +87,8 @@ class Book(db.Model):
     category_id = db.Column(db.Integer, db.ForeignKey("categories.id"))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    is_available = db.Column(db.Boolean, nullable=False, default=True)
+
     owner = db.relationship("User", back_populates="books")
     category = db.relationship("Category", back_populates="books")
 
@@ -467,6 +469,38 @@ def cart_checkout():
     flash("Заказ оформлен!", "success")
     return redirect(url_for("orders"))
 
+@app.route("/orders/<int:order_id>/remove_item/<int:item_id>", methods=["POST"])
+@login_required
+def order_remove_item(order_id, item_id):
+    order = Order.query.get_or_404(order_id)
+    if order.user_id != current_user.id and not current_user.is_admin:
+        abort(403)
+
+    item = OrderItem.query.get_or_404(item_id)
+    if item.order_id != order.id:
+        abort(404)
+
+    # вернуть книгу в каталог
+    if item.book:
+        item.book.is_available = True
+
+    # скорректировать сумму
+    if order.total is None:
+        order.total = Decimal("0.00")
+    order.total -= (item.price_at_time or Decimal("0.00")) * item.quantity
+
+    # удалить позицию из заказа
+    db.session.delete(item)
+
+    # если книг больше нет — считаем заказ отменённым
+    if not order.items:
+        order.status = "cancelled"
+
+    db.session.commit()
+    flash("Книга удалена из заказа", "info")
+    return redirect(url_for("order_edit", order_id=order.id))
+
+
 
 
 # ----------  история заказов  ----------
@@ -475,7 +509,10 @@ def cart_checkout():
 def orders():
     orders_ = (
         Order.query
-        .filter_by(user_id=current_user.id)
+        .filter(
+            Order.user_id == current_user.id,
+            Order.status != "cancelled"   # не показываем отменённые
+        )
         .order_by(Order.creation_date.desc())
         .all()
     )
