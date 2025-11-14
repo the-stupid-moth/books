@@ -146,14 +146,21 @@ def admin_required(view_func):
 
 def recalc_order_total(order: Order) -> None:
     """
-    Пересчитать поле order.total по текущим позициям заказа в БД.
+    Пересчитать сумму заказа по таблице order_items.
     """
-    total = db.session.query(
-        func.coalesce(func.sum(OrderItem.price_at_time * OrderItem.quantity), 0)
-    ).filter(OrderItem.order_id == order.id).scalar()
+    total = (
+        db.session.query(
+            func.coalesce(
+                func.sum(OrderItem.price_at_time * OrderItem.quantity),
+                0
+            )
+        )
+        .filter(OrderItem.order_id == order.id)
+        .scalar()
+    )
 
-    # scalar() вернёт Decimal или None
-    order.total = total or Decimal("0.00")
+    # total приходит как Decimal или int, приводим к Decimal с 2 знаками
+    order.total = Decimal(str(total)).quantize(Decimal("0.01"))
 
 # ────────────  маршруты  ────────────
 @app.route("/")
@@ -627,19 +634,43 @@ def order_cancel(order_id):
 
     return redirect(url_for("orders") if not current_user.is_admin else url_for("admin_dashboard"))
 
-
-@app.route("/orders/<int:order_id>/delete", methods=["POST"])
+@app.route("/orders/<int:order_id>/items/<int:item_id>/delete", methods=["POST"])
 @login_required
-def order_delete(order_id):
+def order_item_delete(order_id, item_id):
     order = Order.query.get_or_404(order_id)
+
+    # проверка прав
     if order.user_id != current_user.id and not current_user.is_admin:
         abort(403)
 
-    db.session.delete(order)
-    db.session.commit()
-    flash("Заказ удалён", "info")
+    item = (
+        OrderItem.query
+        .filter_by(id=item_id, order_id=order.id)
+        .first_or_404()
+    )
 
-    return redirect(url_for("orders") if not current_user.is_admin else url_for("admin_dashboard"))
+    # вернуть книгу в каталог (если используешь is_available)
+    if hasattr(item.book, "is_available"):
+        item.book.is_available = True
+
+    # удаляем позицию
+    db.session.delete(item)
+
+    # пересчитываем сумму заказа
+    recalc_order_total(order)
+
+    # если в заказе больше нет книг — помечаем его отменённым
+    if len(order.items) == 0:
+        order.status = "cancelled"
+
+    db.session.commit()
+
+    flash("Книга удалена из заказа", "info")
+    return redirect(
+        url_for("orders") if not current_user.is_admin
+        else url_for("admin_dashboard")
+    )
+
 
 @app.route("/admin/orders/<int:order_id>/status", methods=["POST"])
 @admin_required
