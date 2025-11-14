@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Редактирование заказа{% endblock %}
+
+{% block content %}
+<div class="main-layout">
+  <section class="content">
+    <h2>Редактирование заказа № {{ order.id }}</h2>
+
+    <p>Статус: <strong>{{ order.status }}</strong></p>
+
+    <form method="post">
+      <div class="form-block">
+        <label>ФИО получателя
+          <input type="text" name="full_name"
+                 value="{{ order.full_name or '' }}" required>
+        </label>
+
+        <label>Телефон
+          <input type="text" name="phone"
+                 value="{{ order.phone or '' }}" required>
+        </label>
+
+        <label>E-mail
+          <input type="email" name="email"
+                 value="{{ order.email or '' }}">
+        </label>
+
+        <label>Адрес доставки
+          <textarea name="address" required>{{ order.address or '' }}</textarea>
+        </label>
+
+        <label>Комментарий к заказу
+          <textarea name="comment">{{ order.comment or '' }}</textarea>
+        </label>
+
+        <button type="submit" style="margin-top:10px;">Сохранить изменения</button>
+        <a href="{{ url_for('orders') }}" style="margin-left:10px;">Отмена</a>
+      </div>
+    </form>
+  </section>
+</div>
+{% endblock %}

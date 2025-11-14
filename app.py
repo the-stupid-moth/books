@@ -469,6 +469,47 @@ def admin_set_user_status(user_id):
     db.session.commit()
     flash("Статус пользователя обновлён", "success")
     return redirect(url_for("admin_dashboard"))
+@app.route("/orders/<int:order_id>/edit", methods=["GET", "POST"])
+@login_required
+def order_edit(order_id):
+    order = Order.query.get_or_404(order_id)
+
+    # Проверяем, что это наш заказ или мы админ
+    if order.user_id != current_user.id and not current_user.is_admin:
+        abort(403)
+
+    # Запрещаем править завершённые и отменённые
+    if order.status in ("completed", "cancelled"):
+        flash("Этот заказ нельзя редактировать", "warning")
+        return redirect(url_for("orders") if not current_user.is_admin
+                        else url_for("admin_dashboard"))
+
+    if request.method == "POST":
+        f = request.form
+        full_name = f.get("full_name", "").strip()
+        phone = f.get("phone", "").strip()
+        address = f.get("address", "").strip()
+        email = f.get("email", "").strip()
+        comment = f.get("comment", "").strip()
+
+        if not (full_name and phone and address):
+            flash("Заполните обязательные поля: ФИО, телефон и адрес", "danger")
+            # просто снова показываем форму
+            return render_template("order_edit.html", order=order)
+
+        order.full_name = full_name
+        order.phone = phone
+        order.address = address
+        order.email = email or None
+        order.comment = comment or None
+
+        db.session.commit()
+        flash("Данные заказа обновлены", "success")
+        return redirect(url_for("orders") if not current_user.is_admin
+                        else url_for("admin_dashboard"))
+
+    # GET — просто показать форму с текущими данными
+    return render_template("order_edit.html", order=order)
 
 @app.route("/orders/<int:order_id>/cancel", methods=["POST"])
 @login_required

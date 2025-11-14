@@ -29,13 +29,18 @@
           <td>{{ o.items|length }}</td>
           <td>{{ o.status }}</td>
           <td>
-            <form action="{{ url_for('order_cancel', order_id=o.id) }}" method="post" style="display:inline;">
-              <button type="submit">Отменить</button>
-            </form>
-            <form action="{{ url_for('order_delete', order_id=o.id) }}" method="post" style="display:inline;">
-              <button type="submit" onclick="return confirm('Удалить заказ?')">Удалить</button>
-            </form>
-          </td>
+          {% if o.status not in ['completed', 'cancelled'] %}
+            <a href="{{ url_for('order_edit', order_id=o.id) }}">Редактировать</a>
+          {% endif %}
+
+          <form action="{{ url_for('order_cancel', order_id=o.id) }}" method="post" style="display:inline;">
+            <button type="submit">Отменить</button>
+          </form>
+          <form action="{{ url_for('order_delete', order_id=o.id) }}" method="post" style="display:inline;">
+            <button type="submit" onclick="return confirm('Удалить заказ?')">Удалить</button>
+          </form>
+        </td>
+
           <td>{{ o.creation_date.strftime('%d.%m.%Y') if o.creation_date else '' }}</td>
         </tr>
         {% endfor %}
